@@ -1,12 +1,37 @@
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
-use serde::Deserialize;
-
+use serde::{Deserialize, Serialize};
 mod db;
-
 use db::*;
+use dotenv::dotenv;
+
+#[derive(Serialize)]
+struct Info {
+    message: String,
+}
+
+#[derive(Deserialize)]
+pub struct Authquery {
+    secret: String,
+}
+
+// this handler gets called if the query deserializes into `Authquery` successfully
+// otherwise a 400 Bad Request error response is returned
+#[get("/stuff")]
+pub async fn stuff(client: web::Data<PrismaClient>, info: web::Query<Authquery>) -> impl Responder {
+    if info.secret != std::env::var("ADMIN_KEY").unwrap() {
+        HttpResponse::Forbidden().json(Info {
+            message: String::from("nope"),
+        })
+    } else {
+        let users = client.user().find_many(vec![]).exec().await.unwrap();
+        HttpResponse::Ok().json(users)
+    }
+}
 
 #[get("/users")]
 async fn get_users(client: web::Data<PrismaClient>) -> impl Responder {
+    //let key = std::env::var("ADMIN_KEY").unwrap();
+
     let users = client.user().find_many(vec![]).exec().await.unwrap();
 
     HttpResponse::Ok().json(users)
@@ -66,10 +91,14 @@ async fn create_post(
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    dotenv().ok();
+    let api_port = std::env::var("API_PORT").expect("expected API_PORT to exists in environment");
+    let admin_key =
+        std::env::var("ADMIN_KEY").expect("expected ADMIN_KEY to exists in environment");
+
     let client = web::Data::new(PrismaClient::_builder().build().await.unwrap());
 
-    //#[cfg(debug_assertions)]
-    //client._db_push().await.unwrap();
+    println!("listening on port {}", &api_port);
 
     HttpServer::new(move || {
         App::new()
@@ -78,8 +107,9 @@ async fn main() -> std::io::Result<()> {
             .service(create_user)
             .service(get_posts)
             .service(create_post)
+            .service(stuff)
     })
-    .bind(("127.0.0.1", 3001))?
+    .bind(format!("0.0.0.0:{}", api_port))?
     .run()
     .await
 }
