@@ -1,0 +1,4 @@
+/target
+*.db
+/src/db.rs
+.env
