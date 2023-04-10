@@ -4,6 +4,17 @@ mod db;
 use db::*;
 use dotenv::dotenv;
 
+use rppal::gpio::{Gpio, OutputPin};
+use simple_signal::{self, Signal};
+use std::error::Error;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
+
+// Gpio uses BCM pin numbering. BCM GPIO 23 is tied to physical pin 16.
+const GPIO_LED: u8 = 18;
+
 #[derive(Serialize)]
 struct Info {
     message: String,
@@ -28,6 +39,25 @@ pub async fn stuff(
     } else {
         let users = client.user().find_many(vec![]).exec().await.unwrap();
         HttpResponse::Ok().json(users)
+    }
+}
+
+#[get("/stuff2")]
+pub async fn stuff2(
+    pin: web::Data<Mutex<OutputPin>>,
+    query: web::Query<Authquery>,
+) -> impl Responder {
+    if query.secret != std::env::var("ADMIN_KEY").unwrap() {
+        HttpResponse::Forbidden().json(Info {
+            message: String::from("nope"),
+        })
+    } else {
+        let mut p = pin.lock().unwrap();
+        p.toggle();
+
+        HttpResponse::Ok().json(Info {
+            message: String::from("ok"),
+        })
     }
 }
 
@@ -101,11 +131,22 @@ async fn main() -> std::io::Result<()> {
 
     let client = web::Data::new(PrismaClient::_builder().build().await.unwrap());
 
+    //configure the pin as output (always 3.3V I think?)
+    //let mut pin = Gpio::new()?.get(GPIO_LED)?.into_output();
+    let mut pin = web::Data::new(Mutex::new(
+        Gpio::new()
+            .expect("expected gpio new to be fine")
+            .get(GPIO_LED)
+            .expect("expected to get GPIO_LED to be fine")
+            .into_output(),
+    ));
+
     println!("listening on port {}", &api_port);
 
     HttpServer::new(move || {
         App::new()
             .app_data(client.clone())
+            .app_data(pin.clone())
             .service(get_users)
             .service(create_user)
             .service(get_posts)

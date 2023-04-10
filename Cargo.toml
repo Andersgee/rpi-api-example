@@ -20,4 +20,6 @@ features = ["sqlite"]
 serde = { version = "1.0", features = ["derive"] }
 actix-web = "4"
 dotenv = "0.15.0"
+rppal = "0.14.1"
+simple-signal = "1.1.1"
 
