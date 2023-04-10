@@ -1,14 +1,9 @@
+use actix::Actor;
+use actix::*;
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
-
-use rppal::gpio::{Gpio, OutputPin};
-use std::sync::Mutex;
-use std::thread;
-use std::time::Duration;
-
-// Gpio uses BCM pin numbering. BCM GPIO 23 is tied to physical pin 16.
-const GPIO_LED: u8 = 18;
+mod valve;
 
 #[derive(Serialize)]
 struct Info {
@@ -20,9 +15,9 @@ pub struct Authquery {
     secret: String,
 }
 
-#[get("/stuff2")]
-pub async fn stuff2(
-    pin: web::Data<Mutex<OutputPin>>,
+#[get("/toggle")]
+pub async fn toggle(
+    valve_addr: web::Data<Addr<valve::Valve>>,
     query: web::Query<Authquery>,
 ) -> impl Responder {
     if query.secret != std::env::var("ADMIN_KEY").unwrap() {
@@ -30,17 +25,34 @@ pub async fn stuff2(
             message: String::from("nope"),
         })
     } else {
-        match pin.lock() {
-            Ok(mut p) => {
-                p.set_low();
-                thread::sleep(Duration::from_millis(2000));
-                p.set_high()
-            }
-            _ => println!("couldnt get mutable pin from pin.lock()"),
-        }
-        //let mut p = pin.lock().unwrap();
-        //p.toggle();
+        let addr = valve_addr.get_ref();
+        let _res = addr.send(valve::ToggleValveMessage { ms: 1000 }).await;
 
+        HttpResponse::Ok().json(Info {
+            message: String::from("ok"),
+        })
+    }
+}
+
+#[get("/stuff2")]
+pub async fn stuff2(query: web::Query<Authquery>) -> impl Responder {
+    if query.secret != std::env::var("ADMIN_KEY").unwrap() {
+        HttpResponse::Forbidden().json(Info {
+            message: String::from("nope"),
+        })
+    } else {
+        HttpResponse::Ok().json(Info {
+            message: String::from("ok"),
+        })
+    }
+}
+#[get("/kek")]
+pub async fn kek(query: web::Query<Authquery>) -> impl Responder {
+    if query.secret != std::env::var("ADMIN_KEY").unwrap() {
+        HttpResponse::Forbidden().json(Info {
+            message: String::from("nope"),
+        })
+    } else {
         HttpResponse::Ok().json(Info {
             message: String::from("ok"),
         })
@@ -54,22 +66,18 @@ async fn main() -> std::io::Result<()> {
     let _admin_key =
         std::env::var("ADMIN_KEY").expect("expected ADMIN_KEY to exists in environment");
 
-    //let client = web::Data::new(PrismaClient::_builder().build().await.unwrap());
-
-    //configure the pin as output (always 3.3V I think?)
-    //let mut pin = Gpio::new()?.get(GPIO_LED)?.into_output();
-    let pin = web::Data::new(Mutex::new(
-        Gpio::new()
-            .expect("expected gpio new to be fine")
-            .get(GPIO_LED)
-            .expect("expected to get GPIO_LED to be fine")
-            .into_output_high(),
-    ));
+    let valve_addr = valve::Valve::new().start();
 
     println!("listening on port {}", &api_port);
 
-    HttpServer::new(move || App::new().app_data(pin.clone()).service(stuff2))
-        .bind(format!("0.0.0.0:{}", api_port))?
-        .run()
-        .await
+    HttpServer::new(move || {
+        App::new()
+            .app_data(web::Data::new(valve_addr.clone()))
+            .service(stuff2)
+            .service(kek)
+            .service(toggle)
+    })
+    .bind(format!("0.0.0.0:{}", api_port))?
+    .run()
+    .await
 }

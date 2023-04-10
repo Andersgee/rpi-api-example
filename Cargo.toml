@@ -11,4 +11,6 @@ actix-web = "4"
 dotenv = "0.15.0"
 rppal = "0.14.1"
 simple-signal = "1.1.1"
+actix-web-actors = "4.2.0"
+actix = "0.13.0"
 
