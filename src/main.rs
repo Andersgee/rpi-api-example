@@ -5,12 +5,12 @@ use db::*;
 use dotenv::dotenv;
 
 use rppal::gpio::{Gpio, OutputPin};
-use simple_signal::{self, Signal};
-use std::error::Error;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
-use std::thread;
-use std::time::Duration;
+//use simple_signal::{self, Signal};
+//use std::error::Error;
+//use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
+//use std::thread;
+//use std::time::Duration;
 
 // Gpio uses BCM pin numbering. BCM GPIO 23 is tied to physical pin 16.
 const GPIO_LED: u8 = 18;
@@ -52,8 +52,14 @@ pub async fn stuff2(
             message: String::from("nope"),
         })
     } else {
-        let mut p = pin.lock().unwrap();
-        p.toggle();
+        match pin.lock() {
+            Ok(mut p) => {
+                p.toggle();
+            }
+            _ => println!("couldnt get mutable pin from pin.lock()"),
+        }
+        //let mut p = pin.lock().unwrap();
+        //p.toggle();
 
         HttpResponse::Ok().json(Info {
             message: String::from("ok"),
