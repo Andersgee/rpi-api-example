@@ -13,6 +13,7 @@ struct Info {
 #[derive(Deserialize)]
 pub struct Authquery {
     secret: String,
+    ms: u64,
 }
 
 #[get("/toggle")]
@@ -26,7 +27,7 @@ pub async fn toggle(
         })
     } else {
         let addr = valve_addr.get_ref();
-        let _res = addr.send(valve::ToggleValveMessage { ms: 1000 }).await;
+        let _res = addr.send(valve::ToggleValveMessage { ms: query.ms }).await;
 
         HttpResponse::Ok().json(Info {
             message: String::from("ok"),
