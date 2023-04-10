@@ -17,8 +17,11 @@ pub struct Authquery {
 // this handler gets called if the query deserializes into `Authquery` successfully
 // otherwise a 400 Bad Request error response is returned
 #[get("/stuff")]
-pub async fn stuff(client: web::Data<PrismaClient>, info: web::Query<Authquery>) -> impl Responder {
-    if info.secret != std::env::var("ADMIN_KEY").unwrap() {
+pub async fn stuff(
+    client: web::Data<PrismaClient>,
+    query: web::Query<Authquery>,
+) -> impl Responder {
+    if query.secret != std::env::var("ADMIN_KEY").unwrap() {
         HttpResponse::Forbidden().json(Info {
             message: String::from("nope"),
         })
