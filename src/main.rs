@@ -96,7 +96,7 @@ async fn create_post(
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
     let api_port = std::env::var("API_PORT").expect("expected API_PORT to exists in environment");
-    let admin_key =
+    let _admin_key =
         std::env::var("ADMIN_KEY").expect("expected ADMIN_KEY to exists in environment");
 
     let client = web::Data::new(PrismaClient::_builder().build().await.unwrap());
