@@ -139,7 +139,7 @@ async fn main() -> std::io::Result<()> {
 
     //configure the pin as output (always 3.3V I think?)
     //let mut pin = Gpio::new()?.get(GPIO_LED)?.into_output();
-    let mut pin = web::Data::new(Mutex::new(
+    let pin = web::Data::new(Mutex::new(
         Gpio::new()
             .expect("expected gpio new to be fine")
             .get(GPIO_LED)
