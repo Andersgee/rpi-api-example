@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use rppal::gpio::{Gpio, OutputPin};
 use std::sync::Mutex;
+use std::thread;
+use std::time::Duration;
 
 // Gpio uses BCM pin numbering. BCM GPIO 23 is tied to physical pin 16.
 const GPIO_LED: u8 = 18;
@@ -30,7 +32,9 @@ pub async fn stuff2(
     } else {
         match pin.lock() {
             Ok(mut p) => {
-                p.toggle();
+                p.set_low();
+                thread::sleep(Duration::from_millis(2000));
+                p.set_high()
             }
             _ => println!("couldnt get mutable pin from pin.lock()"),
         }
@@ -59,7 +63,7 @@ async fn main() -> std::io::Result<()> {
             .expect("expected gpio new to be fine")
             .get(GPIO_LED)
             .expect("expected to get GPIO_LED to be fine")
-            .into_output(),
+            .into_output_high(),
     ));
 
     println!("listening on port {}", &api_port);
