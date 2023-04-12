@@ -29,11 +29,11 @@ impl Valve {
 }
 
 /**
- * setup actor and message listener for Valve. send a message like this:
+ * setup actor and message listener for Valve. send a message something like this:
  *
  * ```rs
  * let valve_addr = valve::Valve::new().start(); //start actor
- * valve_addr.send(valve::ToggleValveMessage { ms: query.ms }) //send message to it
+ * valve_addr.send(valve::ToggleValveMessage { ms: 1000 }) //send message to it
  * ```
  */
 #[derive(Message)]
