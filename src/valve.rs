@@ -52,7 +52,7 @@ impl Actor for Valve {
 impl Handler<ToggleValveMessage> for Valve {
     type Result = ();
     fn handle(&mut self, msg: ToggleValveMessage, ctx: &mut Self::Context) -> Self::Result {
-        //println!("message to Valve actor handled here, ms: {}", msg.ms);
+        //println!("ToggleValveMessage sent to Valve actor is handled here, ms: {}", msg.ms);
         self.toggle(ctx, msg.ms)
     }
 }

@@ -1,21 +1,13 @@
-dev
+# rpi-api-example
+
+Rust with rppal and actix.
+
+Example of controlling output of pins on the raspberry pi by sending requests to a webserver running on it.
 
 ```sh
-#1. push or pull prisma/schema.prisma
-cargo run -p prisma-cli -- db push
-#cargo run -p prisma-cli -- db pull
-
-#2. generate src/db.rs (from prisma/schema.prisma)
-cargo run -p prisma-cli -- generate
-
-#3 run api (debug mode)
 cargo run
 
-```
-
-prod
-
-```rs
-cargo build --release
-cargo run --release
+#send a GET request to the rpi
+#this would toggle a pin on for 2 seconds and then turn it off again
+curl "http://10.0.0.43:3002/openvalve?ms=2000&secret=somesecret"
 ```
