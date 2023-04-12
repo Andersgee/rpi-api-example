@@ -16,7 +16,7 @@ pub async fn openvalve(
     valve_addr: web::Data<Addr<valve::Valve>>,
     query: web::Query<OpenvalveQuery>,
 ) -> impl Responder {
-    let authed = query.secret != std::env::var("SECRET").unwrap();
+    let authed = query.secret == std::env::var("SECRET").unwrap();
     match authed {
         false => HttpResponse::Forbidden(),
         true => {
